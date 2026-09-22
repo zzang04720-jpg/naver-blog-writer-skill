@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>네이버 블로그 에이전트</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">루</div>
+        <div class="brand-name">루미스토리 에이전트</div>
+      </div>
+
+      <div class="profile-card">
+        <div class="profile-title">블로그 프로필</div>
+        <div class="profile-row"><span>니치</span><b>blog-profile.yaml 참고</b></div>
+        <div class="profile-row"><span>상태</span><b id="status-pill">대기 중</b></div>
+      </div>
+
+      <div class="hint">
+        이 창은 실제로 글을 쓰지 않습니다. 버튼을 누르면 그 내용을
+        그대로 Claude Code에게 대화로 전달하고, 응답을 여기 보여줄 뿐입니다.
+      </div>
+
+      <button class="ghost-btn" id="open-output">output 폴더 열기</button>
+      <button class="ghost-btn" id="reset-btn">처음부터 다시 시작</button>
+    </aside>
+
+    <main class="main">
+      <div class="log" id="log">
+        <div class="msg agent">
+          안녕하세요. 아래 &ldquo;오늘 글 시작하기&rdquo;를 누르면 소재 발굴부터 시작합니다.
+          진행 중 승인이 필요한 순간에는 후보를 보여드리고 기다립니다 — 그때 아래
+          빠른 응답 버튼을 눌러주세요.
+        </div>
+      </div>
+
+      <div class="quick-row">
+        <button class="quick primary" data-msg="오늘 쓸 블로그 글 하나 뽑아서 진행해줘">오늘 글 시작하기</button>
+        <button class="quick" data-msg="승인. 이대로 진행해줘">승인</button>
+        <button class="quick" data-msg="다른 후보로 교체해줘">다른 후보로 교체</button>
+        <button class="quick" data-msg="각도를 바꿔서 다시 제안해줘">각도 변경</button>
+        <button class="quick danger" data-msg="여기서 중단할게">중단</button>
+      </div>
+
+      <div class="input-row">
+        <textarea id="input" placeholder="직접 메시지를 입력하거나, 위 빠른 버튼을 눌러주세요"></textarea>
+        <button id="send" class="send-btn">보내기</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
