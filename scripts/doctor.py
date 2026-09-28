@@ -25,6 +25,9 @@ def main():
         a, b = left / relative, right / relative
         if not a.is_file() or not b.is_file() or a.read_bytes() != b.read_bytes():
             errors.append('Skill copies differ: ' + relative.as_posix())
+    for filename in ['BlackHanSans-OFL.txt', 'NotoSansKR-Bold-OFL.txt', 'FONT-SOURCES.md']:
+        if not (left / 'thumbnail-compositor/assets' / filename).is_file():
+            errors.append('Bundled font notice missing: ' + filename)
     if sys.version_info < (3, 9):
         errors.append('Python 3.9+ is required')
     if not args.offline:

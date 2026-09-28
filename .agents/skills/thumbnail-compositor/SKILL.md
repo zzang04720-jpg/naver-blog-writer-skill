@@ -5,7 +5,7 @@ description: Pillow(PIL)로 배경 사진 위에 텍스트 4개(line1~3, sub)를
 
 # thumbnail-compositor
 
-> **폴백 전용 — 정상 흐름에서 호출하지 않는다.** v1.6 기준 S8의 썸네일은 사람이 캔바 "강아지" 브랜드 템플릿 → 대량 제작에서 직접 만든다. 이 스크립트는 캔바를 쓸 수 없는 예외 상황(계정 문제, 오프라인 등)에서만 사람이 수동으로 실행하는 대비책이다.
+> **폴백 전용 — 정상 흐름에서 호출하지 않는다.** v1.6 기준 S8의 썸네일은 사람이 본인 소유의 캔바 템플릿 등으로 직접 만든다. 개인 템플릿은 이 저장소에 포함되지 않는다. 이 스크립트는 캔바를 쓸 수 없는 예외 상황(계정 문제, 오프라인 등)에서만 사람이 수동으로 실행하는 대비책이다.
 
 ## 왜 폴백으로 강등됐는가
 이 스크립트는 실제로 만들고 검증됐다 — Canva Autofill API가 Enterprise 전용이라는 걸 확인한 뒤, PIL로 직접 텍스트를 합성해 자동화를 유지하려 시도한 결과물이다. 하지만 실제 출력물을 캔바 원본과 나란히 놓고 비교하니 품질 격차가 뚜렷했다(외곽선 렌더링이 거칠고, 그라데이션 오버레이가 계단현상을 보이며, 폰트 렌더링이 캔바만큼 매끈하지 않음). 자동화보다 품질을 우선하기로 하면서 이 스크립트는 주 경로에서 빠졌다.
@@ -16,22 +16,31 @@ description: Pillow(PIL)로 배경 사진 위에 텍스트 4개(line1~3, sub)를
 자동으로 호출되지 않는다. 캔바를 쓸 수 없어 사람이 직접 이 스크립트를 실행해야 할 때만 쓴다.
 
 ## 필요 패키지
-```bash
-pip install Pillow --break-system-packages
+저장소 루트에서 전용 가상환경에 설치한다. 시스템 Python 설정은 바꾸지 않는다.
+
+```powershell
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
+
+macOS/Linux에서는 `.venv/bin/python -m pip install -r requirements.txt`를 사용한다.
 
 ## 에셋
-- `/assets/BlackHanSans.ttf` — 3줄 문구(line1~3)용 굵은 제목 폰트
-- `/assets/NotoSansKR-Bold.ttf` — 보조문구(sub)용 폰트 (variable font, weight 700 적용 시도)
+- `assets/BlackHanSans.ttf` — 3줄 문구(line1~3)용 굵은 제목 폰트
+- `assets/NotoSansKR-Bold.ttf` — 보조문구(sub)용 폰트 (variable font, weight 700 적용 시도)
+
+두 폰트는 SIL OFL 1.1로 배포된다. `assets/BlackHanSans-OFL.txt`, `assets/NotoSansKR-Bold-OFL.txt`에 저작권 고지와 라이선스 전문이 있으며 `assets/FONT-SOURCES.md`에서 공식 원본과 해시를 확인할 수 있다.
 
 ## 사용법
-```bash
-python .claude/skills/thumbnail-compositor/scripts/compose.py \
-  --background <사진경로> \
-  --line1 "강아지가" --line2 "피하는이유" --line3 "따로있다" \
-  --sub "손이 아니라 태도가 만드는 차이" \
-  --output <출력경로>
+
+저장소 루트에서 실행한다. 다음은 가상 문구와 임시 배경을 사용하는 오프라인 예제다.
+
+```powershell
+New-Item -ItemType Directory -Force output/offline-demo/images
+.venv\Scripts\python.exe .claude/skills/thumbnail-compositor/scripts/compose.py --line1 "예제" --line2 "미리보기" --line3 "테스트" --sub "발행하지 않는 가상 예제" --output output/offline-demo/images/thumbnail.jpg
 ```
+
+실제 작업에서는 `--background "본인 사진 경로"`를 추가하고 승인된 문구를 넣는다. macOS/Linux에서는 `mkdir -p output/offline-demo/images`와 `.venv/bin/python`을 사용한다.
 `--background`를 생략하거나 파일이 없으면 임시 그라데이션 배경으로 대체한다 (개발/테스트용이며 실제 발행용 결과물로는 부족하다).
 
 ## 처리

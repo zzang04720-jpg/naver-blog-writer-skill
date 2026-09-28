@@ -110,4 +110,10 @@ python .claude/skills/naver-packager/scripts/package.py output/my-draft --no-ope
 
 ## 라이선스
 
-MIT. 동봉 폰트의 라이선스는 각 원본 배포처를 확인하세요.
+코드와 프로젝트 문서는 루트 [LICENSE](LICENSE)의 MIT 라이선스로 배포됩니다. 동봉 폰트에는 별도의 **SIL Open Font License 1.1**이 적용됩니다.
+
+- Black Han Sans: [저작권 고지 및 OFL 전문](.claude/skills/thumbnail-compositor/assets/BlackHanSans-OFL.txt)
+- Noto Sans KR 가변 폰트: [저작권 고지 및 OFL 전문](.claude/skills/thumbnail-compositor/assets/NotoSansKR-Bold-OFL.txt)
+- [공식 원본 경로, 고정 커밋 및 SHA-256 검증 기록](.claude/skills/thumbnail-compositor/assets/FONT-SOURCES.md)
+
+동일한 고지 파일은 `.agents/skills/thumbnail-compositor/assets/`에도 포함됩니다. 폰트를 재배포할 때 해당 라이선스와 저작권 고지도 함께 유지하세요.
