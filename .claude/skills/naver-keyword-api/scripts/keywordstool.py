@@ -35,21 +35,21 @@ def load_env(env_path: Path) -> dict[str, str]:
     env: dict[str, str] = {}
     if not env_path.exists():
         return env
-    for line in env_path.read_text(encoding="utf-8").splitlines():
+    for line in env_path.read_text(encoding="utf-8-sig").splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
-        env[key.strip()] = value.strip()
+        env[key.strip()] = value.strip().strip('"').strip("'")
     return env
 
 
 def find_project_root(start: Path) -> Path:
     cur = start.resolve()
     for parent in [cur, *cur.parents]:
-        if (parent / "blog-profile.yaml").exists():
+        if (parent / "blog-profile.example.yaml").is_file() and (parent / "CLAUDE.md").is_file():
             return parent
-    return start.resolve()
+    raise RuntimeError("이 저장소 안에서 실행하세요. blog-profile.example.yaml과 CLAUDE.md가 필요합니다.")
 
 
 def build_signature(timestamp: str, method: str, uri: str, secret_key: str) -> str:

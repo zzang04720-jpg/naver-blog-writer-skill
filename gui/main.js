@@ -8,17 +8,20 @@
 
 const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const path = require("path");
-const { spawn } = require("child_process");
+const fs = require("fs");
+const { createAgentClient } = require("./agent-client");
 
 // gui/ 폴더의 부모 = 저장소 루트. CLAUDE.md와 .claude/가 여기 있어야
 // Claude Code가 이 스킬 세트를 인식한다.
 const SKILL_ROOT = path.join(__dirname, "..");
 
 let mainWindow;
-let sessionStarted = false;
+const agentClient = createAgentClient({ cwd: SKILL_ROOT });
+const smoke = process.argv.includes("--smoke");
 
 function createWindow() {
   mainWindow = new BrowserWindow({
+    show: !smoke,
     width: 1180,
     height: 820,
     minWidth: 860,
@@ -32,6 +35,18 @@ function createWindow() {
     },
   });
 
+  if (smoke) {
+    const timeout = setTimeout(() => app.exit(1), 15000);
+    mainWindow.webContents.once("did-finish-load", async () => {
+      try {
+        const ready = await mainWindow.webContents.executeJavaScript('Boolean(window.agent && document.getElementById("send"))');
+        console.log(ready ? "GUI_SMOKE_OK" : "GUI_SMOKE_FAILED");
+        clearTimeout(timeout);
+        app.exit(ready ? 0 : 1);
+      } catch { app.exit(1); }
+    });
+    mainWindow.webContents.once("did-fail-load", () => app.exit(1));
+  }
   mainWindow.setMenuBarVisibility(false);
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
 }
@@ -47,66 +62,14 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-// 렌더러에서 메시지 하나를 받아 `claude -p`로 넘기고 텍스트 응답을 돌려준다.
-// 두 번째 메시지부터는 --continue로 같은 대화(세션)를 이어간다.
-ipcMain.handle("agent:send", async (_event, message) => {
-  return new Promise((resolve) => {
-    if (!message || !message.trim()) {
-      resolve({ ok: false, text: "빈 메시지는 보낼 수 없습니다." });
-      return;
-    }
-
-    const args = ["-p", message, "--output-format", "text"];
-    if (sessionStarted) args.push("--continue");
-
-    const proc = spawn("claude", args, {
-      cwd: SKILL_ROOT,
-      shell: true,
-      windowsHide: true,
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    proc.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-    proc.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    proc.on("error", (err) => {
-      resolve({
-        ok: false,
-        text:
-          "claude 명령을 실행할 수 없습니다. Claude Code CLI가 설치되어 있고 " +
-          "PATH에 등록되어 있는지 확인해주세요.\n\n오류: " + err.message,
-      });
-    });
-
-    proc.on("close", (code) => {
-      sessionStarted = true;
-      if (code !== 0 && !stdout.trim()) {
-        resolve({
-          ok: false,
-          text: (stderr || `claude 프로세스가 오류 코드 ${code}로 종료됐습니다.`).trim(),
-        });
-        return;
-      }
-      resolve({ ok: true, text: stdout.trim() || "(응답이 비어 있습니다)" });
-    });
-  });
-});
-
-// 새 대화로 다시 시작하고 싶을 때 (예: "처음부터 다시" 버튼)
-ipcMain.handle("agent:reset", async () => {
-  sessionStarted = false;
-  return { ok: true };
-});
+// 입력은 stdin으로 전달하며 각 GUI 세션의 ID만 이어 쓴다.
+ipcMain.handle("agent:send", async (_event, message) => agentClient.send(message));
+ipcMain.handle("agent:reset", async () => agentClient.reset());
 
 // post.html 등 생성된 파일이 있는 output 폴더를 탐색기로 연다.
 ipcMain.handle("agent:open-output", async () => {
   const outputDir = path.join(SKILL_ROOT, "output");
-  await shell.openPath(outputDir);
-  return { ok: true };
+  await fs.promises.mkdir(outputDir, { recursive: true });
+  const error = await shell.openPath(outputDir);
+  return { ok: !error, text: error };
 });

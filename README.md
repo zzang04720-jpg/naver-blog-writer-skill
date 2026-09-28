@@ -1,106 +1,113 @@
 # 네이버 블로그 반자동화 글쓰기 에이전트
 
-[Claude Code](https://claude.com/claude-code)용 서브에이전트 + 스킬 묶음입니다. 키워드 발굴부터 검색량 검증, 본문 작성, 자체 검증, 이미지 준비, 붙여넣기용 패키징까지 자동으로 진행하고, **최종 발행 버튼은 항상 사람이 직접 누릅니다.** 자동 로그인·자동 발행은 하지 않습니다.
+네이버 블로그 초안을 만들고 검토하는 **Claude Code용 프로젝트 스킬 묶음**입니다. 독립된 앱이나 자동 발행 서비스가 아닙니다. 이 저장소 전체를 전용 폴더에 설치하면 키워드 조사 → 초안 → 독립 검증 → 이미지 준비 → 붙여넣기용 HTML을 진행합니다. **최종 검토와 네이버 발행은 사람이 직접 합니다.**
 
-## 이게 뭘 해주나요
+인스타그램·Threads 스킬이나 다른 저장소의 파일은 필요하지 않습니다. 기본 예시는 반려동물 블로그이며 실제 블로그 정보와 연결 계정은 설치자가 설정합니다. 검색 노출, 애드포스트 승인, 수익은 보장하지 않습니다.
 
-1. 오늘 쓸 만한 소재/키워드를 찾고, 실제 검색량과 경쟁 정도를 확인합니다
-2. 예전에 이미 쓴 글과 겹치지 않는지 확인합니다
-3. **[승인 게이트 1]** 후보 키워드·제목안을 보여주고 사람의 선택을 기다립니다
-4. 본문을 쓰고, 다른 에이전트가 독립적으로 7개 항목을 검증합니다 (사실 창작·과장 표현·반려동물 안전 규칙 위반 등)
-5. 본문에 들어갈 이미지를 준비합니다 (실사 이미지는 Canva, 썸네일은 사람이 캔바에서 직접 제작 — 자동화 폴백 스크립트도 포함)
-6. 스마트에디터에 그대로 붙여넣을 수 있는 `post.html`을 만들어 브라우저로 엽니다
-7. **[승인 게이트 2]** 사람이 전체선택 → 복사 → 스마트에디터 붙여넣기 → 직접 발행
+## 준비할 것
 
-기본값은 반려동물(강아지) 블로그로 맞춰져 있지만, 도메인 규칙 파일 하나만 바꾸면 다른 주제로도 쓸 수 있습니다 (아래 "다른 주제로 바꾸기" 참고).
+- Git 또는 GitHub의 Download ZIP (압축을 풀 때 `.claude`, `.agents` 숨김 폴더도 포함)
+- [Claude Code CLI](https://code.claude.com/docs/en/setup) 설치와 로그인. 이 폴더를 신뢰하고 필요한 도구 권한을 직접 승인할 수 있어야 합니다.
+- Python 3.9 이상. 검색·점수·중복·패키징은 표준 라이브러리만 사용합니다. 썸네일 합성 폴백에만 Pillow가 필요합니다.
+- 실제 검색량 조회용 [네이버 검색광고 API](https://searchad.naver.com/) 키 3개
+- 경쟁 블로그·뉴스 조회용 [NAVER API HUB Application](https://guide.ncloud-docs.com/docs/apihub-application)의 인증 키. 검색 API 주소는 `naverapihub.apigw.ntruss.com/search/v1`입니다. 이전 개발자센터 키와 구분하고 현재 이용 조건은 제공자의 안내를 확인하세요.
+- 이미지 호스팅을 사용할 때: 본인 소유의 공개 GitHub 이미지 저장소와 해당 저장소만 선택한 fine-grained PAT. `Contents: Read and write` 권한이 필요합니다. [GitHub 권한 안내](https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents)
+- 선택: Canva MCP 연결. 연결이 없으면 본문 이미지와 썸네일을 직접 준비합니다. 개인 Canva 템플릿은 포함되어 있지 않습니다.
+- 선택 GUI: Node.js 20 이상과 npm. GUI에서도 Claude Code CLI 설치와 로그인이 필요합니다.
 
-## 시작하기 전에 필요한 것
+## 설치 — Windows PowerShell
 
-- [Claude Code](https://claude.com/claude-code) CLI 설치 및 로그인
-- Python 3.9 이상 (스킬 스크립트 실행용, 대부분 표준 라이브러리만 씁니다)
-- 무료로 발급되는 API 키 2종
-  - **네이버 검색광고 API**: [searchad.naver.com](https://searchad.naver.com) → 도구 → API 사용 관리. 심사 없이 즉시 발급, 광고 집행 의무 없음. 검색량 조회에 씀
-  - **네이버 개발자센터 검색 API**: [developers.naver.com](https://developers.naver.com) → Application 등록 → "검색" API 선택. 경쟁 블로그/뉴스 수집에 씀
-- 이미지 공개 호스팅용 GitHub 저장소 + Personal Access Token (`repo` 권한). 스마트에디터가 base64/로컬 이미지를 막기 때문에, 공개 https URL이 필요해서 씁니다
-- (선택) [Canva MCP](https://www.canva.com) — 본문 이미지 자동 생성에 씀. 없어도 동작하지만 이미지 단계는 사람이 더 개입해야 합니다
+새 전용 폴더에 저장소 전체를 받습니다. 다른 프로젝트의 스킬 폴더와 합치지 마세요.
 
-## 설치
-
-```bash
-git clone https://github.com/<your-username>/naver-blog-writer-skill.git
+```powershell
+git clone https://github.com/zzang04720-jpg/naver-blog-writer-skill.git
 cd naver-blog-writer-skill
-
-# 1) API 키 채우기
-cp .env.example .env
-# .env 파일을 열어 NAVER_AD_*, NAVER_SEARCH_*, GITHUB_TOKEN, GITHUB_REPO 값을 채워주세요
-
-# 2) 내 블로그 정보로 프로필 만들기
-cp blog-profile.example.yaml blog-profile.yaml
-# niche, tone, blog_url, seed_keywords를 내 블로그에 맞게 수정
-
-# 3) (선택) 썸네일 폴백 스크립트를 쓸 거라면
-pip install -r requirements.txt
+python scripts/doctor.py --offline
+python -m unittest discover -s tests -v
+Copy-Item .env.example .env
+Copy-Item blog-profile.example.yaml blog-profile.yaml
 ```
 
-이제 이 폴더에서 Claude Code를 실행하면 `.claude/agents`와 `.claude/skills`를 자동으로 인식합니다.
+이미 설정 파일이 있으면 복사 명령을 다시 실행하지 말고 기존 파일을 수정하세요. `.env`는 API 키를, `blog-profile.yaml`은 본인의 `blog_url`, `niche`, `tone`, `seed_keywords`, `phase`를 채웁니다. 빈 블로그 URL로는 S1 소재 발굴을 시작하지 않습니다. 예시 프로필은 실제 운영 설정이 아닙니다. `.env`, 실제 프로필, 발행 이력, 산출물은 Git에 포함되지 않습니다.
 
-```bash
+macOS/Linux에서는 `python` 대신 `python3`, `Copy-Item` 대신 `cp`를 사용할 수 있습니다.
+
+필요할 때만 썸네일 합성용 패키지를 별도 환경에 설치합니다.
+
+```powershell
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+## 시작하기
+
+저장소 루트에서 실행합니다.
+
+```powershell
+python scripts/doctor.py
 claude
 ```
 
-## 사용법 1 — Claude Code 채팅으로
+doctor는 파일·도구 설치 여부를 확인하며 키 값이나 프로필 내용을 출력하지 않습니다. API 인증, 계정 권한, 실제 블로그 URL은 별도로 확인해야 합니다. Claude Code에서 `/agents`로 `keyword-scout`, `post-writer`, `quality-auditor`, `visual-producer` 네 역할이 보이는지 확인한 뒤 요청합니다.
 
-Claude Code 대화창에 이렇게 요청하면 됩니다.
+> 내 blog-profile.yaml 설정을 확인하고, 오늘 쓸 네이버 블로그 소재 후보를 찾아줘. 키워드·제목 승인 전에는 본문을 쓰지 마.
 
-> 오늘 쓸 강아지 블로그 글 하나 뽑아서 진행해줘
+키워드만 주면 검색형, 기사 URL·원문을 주면 홈피드형으로 진행합니다. 검색 수치와 출처가 확보되지 않으면 확인된 것처럼 작성하지 않습니다.
 
-에이전트가 소재 발굴 → 검색량 검증 → 중복 체크를 마치면 후보 키워드와 제목안을 보여주고 멈춥니다(승인 게이트 1). 승인하면 본문 작성 → 검증 → 이미지 준비 → 패키징까지 진행한 뒤 `post.html`을 브라우저로 엽니다(승인 게이트 2). 이후 전체선택·복사해서 스마트에디터에 붙여넣고 `publish.md` 체크리스트를 확인한 뒤 직접 발행하면 됩니다.
+1. 프로필 확인 → 키워드·검색량·경쟁·중복 조사
+2. **승인 1:** 키워드, 제목 후보, 구성안을 사용자가 선택
+3. 초안 작성 → 별도 에이전트가 사실·표현·도메인 규칙 검증
+4. 이미지 준비, 사용자 썸네일 파일 확인, 필요 시 본인 이미지 저장소에 업로드
+5. `output/<날짜_주제>/post.html`, `publish.md` 생성
+6. **승인 2:** HTML 검토 → 복사 → 스마트에디터 붙여넣기 → 이미지·서식 확인 → 직접 발행
+7. 사용자가 실제 발행 URL을 알려준 뒤 `history.jsonl` 기록
 
-특정 기사를 소재로 쓰고 싶다면 기사 URL이나 원문을 함께 주면 "홈피드형" 트랙으로, 키워드만 주면 "검색형" 트랙으로 자동 판단합니다.
+붙여넣기 결과는 브라우저와 네이버 에디터에서 직접 확인하세요. 이미지 복사가 되지 않으면 저장된 이미지를 직접 첨부합니다. 검증을 통과했다는 것은 품질 규칙 검사 결과이며, 모든 사실의 정확성이나 노출 성과를 보장하지 않습니다.
 
-## 사용법 2 — 클릭형 GUI로 (`gui/`)
+## 선택 GUI
 
-터미널 명령이 낯설다면 `gui/` 폴더의 데스크톱 창을 쓰세요. 버튼을 누르면 그 내용을 그대로 Claude Code CLI에 전달하고 응답을 화면에 보여주는 얇은 래퍼입니다 — 실제 작업은 여전히 위 스킬/에이전트가 합니다.
+루트에서 CLI 설치·로그인·권한 설정을 먼저 확인한 다음 실행합니다.
 
-```bash
+```powershell
 cd gui
-npm install     # 최초 1회, Electron 다운로드 (몇 분 걸릴 수 있음)
+npm ci
+npm test
+npm run smoke
 npm start
 ```
 
-창이 뜨면 "오늘 글 시작하기"를 누르고, 승인이 필요한 순간에 "승인 / 다른 후보로 교체 / 각도 변경 / 중단" 버튼을 누르면 됩니다. 직접 메시지를 입력해도 됩니다.
+GUI는 `claude -p` 응답을 표시하는 채팅 창입니다. 현재 GUI의 세션 ID를 이어 쓰며, 입력은 셸 명령에 넣지 않고 stdin으로 전달합니다. 권한 요청을 GUI에서 직접 승인하는 기능은 없습니다. 권한 거부가 표시되면 안내된 `claude --resume <세션ID>` 명령을 저장소 루트 터미널에서 실행해 확인하세요. 처음 설치하거나 도구를 연결하는 작업은 CLI에서 시작하는 것이 좋습니다. 새 대화 버튼은 현재 응답이 끝난 뒤 사용할 수 있습니다.
 
-> **주의**: 이 GUI는 한 번에 하나의 대화만 이어갑니다(`claude --continue` 사용). 같은 폴더에서 터미널로 별도 `claude` 세션을 동시에 열면 대화가 섞일 수 있으니, GUI를 쓸 때는 터미널 세션은 닫아두세요.
+`npm run smoke`는 숨겨진 창에서 화면과 preload 연결만 확인하고 종료합니다. Claude 요청·API 호출·업로드를 하지 않습니다. Electron 설치 스크립트를 막는 npm 설정을 쓰는 경우 `npm install-scripts ls`로 `electron@32.3.3`을 확인하고 해당 패키지의 스크립트만 허용하세요.
 
-## 구조
+## 오프라인 점검과 스크립트
 
-```
-CLAUDE.md / AGENTS.md   오케스트레이터(메인 에이전트) 동작 규칙
-.claude/agents/          서브에이전트 4개 (keyword-scout, post-writer, quality-auditor, visual-producer)
-.claude/skills/          스크립트/작법 스킬 10개 (검색량 조회, 중복 체크, 이미지 업로드, 패키징 등)
-.agents/skills/          .claude/skills와 동일 — AGENTS.md 규약을 쓰는 다른 에이전트 런타임 호환용
-blog-profile.example.yaml  블로그 프로필 템플릿 (복사해서 blog-profile.yaml로 사용)
-docs/design.md            전체 설계 근거 문서 (왜 이렇게 나눴는지, 실패 처리 정책 등)
-history.schema.md         history.jsonl 스키마 설명 (중복 체크가 참조하는 발행 이력)
-gui/                       클릭형 데스크톱 GUI (Electron, Claude Code CLI 래퍼) — 선택 사항
+```powershell
+python scripts/doctor.py --offline
+python -m unittest discover -s tests -v
+python .claude/skills/keyword-scoring/scripts/score.py examples/candidates.json --phase 1
+python .claude/skills/naver-packager/scripts/package.py output/my-draft --no-open
 ```
 
-각 에이전트/스킬이 어떤 단계에서 호출되는지, 실패하면 어떻게 처리하는지는 `CLAUDE.md`와 `docs/design.md`에 자세히 정리되어 있습니다.
+테스트와 `examples/candidates.json`은 **가상 데이터**입니다. 테스트는 임시 폴더에서만 HTML을 만들며 네트워크·브라우저 열기·실제 발행 이력을 사용하지 않습니다. 마지막 패키징 명령은 본인의 `02_draft.md`, `02_meta.json`, `images.json`이 이미 있는 폴더가 필요합니다. `--no-open`을 빼면 완성 HTML을 브라우저로 엽니다. 실제 파이프라인은 S7 검증을 통과한 초안만 패키징합니다.
 
-## 다른 주제로 바꾸기
+## 구조와 다른 런타임
 
-기본값은 반려동물(강아지) 블로그입니다. 안전 규칙(`pet-domain-guard` 스킬)만 도메인 전용이고, 나머지 워크플로우는 범용입니다.
+| 위치 | 역할 |
+|---|---|
+| `CLAUDE.md`, `AGENTS.md` | 현재 실행 규칙, 승인 게이트, 프로필 확인 |
+| `.claude/agents/*.md` | Claude Code 서브에이전트 4개 |
+| `.claude/skills/` | 스킬 12개와 스크립트·참조·폰트 |
+| `.agents/skills/` | 같은 12개 스킬의 동기화된 복사본 |
+| `scripts/doctor.py`, `tests/` | 설치 구조와 오프라인 회귀 검사 |
+| `docs/design.md` | 초기 설계 배경과 운영 목표 |
+| `history.schema.md` | 실제 발행 이력 형식 |
+| `gui/` | 선택 Electron 채팅 창 |
 
-1. `blog-profile.yaml`의 `niche`, `tone`, `seed_keywords`를 내 주제로 수정
-2. `.claude/skills/pet-domain-guard/references/rules.md`를 내 도메인의 안전/품질 규칙으로 새로 작성 (또는 규칙이 필요 없는 주제라면 스킬을 비활성화)
+`.agents/skills`를 읽는 런타임에서도 스크립트를 사용할 수 있습니다. 전체 워크플로우에는 파일 접근과 독립 서브에이전트 호출이 필요하며, 런타임이 `.claude/agents`를 자동 인식한다고 가정하지 않습니다. `AGENTS.md`의 역할 정의 경로를 따라 별도 컨텍스트로 호출하세요. 이 기능이 없는 런타임은 개별 스크립트 사용에 한정합니다.
 
-## 안전장치
-
-- **자동 발행 없음**: 항상 패키징(post.html 생성)에서 멈추고 사람의 붙여넣기·발행을 기다립니다
-- **미검증 발행 없음**: 자체 검증(7개 항목)을 통과하지 못한 초안은 다음 단계로 넘어가지 않습니다
-- **사실 창작 금지**: 근거 없는 수치·인용·경험을 만들지 않고, 확인 안 된 정보는 명시적으로 "확인 필요"로 표시합니다
-- 자세한 실패 처리·에스컬레이션 정책은 `CLAUDE.md` §7 참고
+다른 주제로 바꾸려면 프로필과 `pet-domain-guard/references/rules.md`를 함께 수정하세요. `niche`만 바꿔도 규칙이 자동 전환되지는 않습니다. `.claude/skills` 수정 후 `.agents/skills`에도 같은 변경을 반영하고 doctor로 확인합니다.
 
 ## 라이선스
 
-MIT License. 자유롭게 가져다 쓰고, 고치고, 배포해도 됩니다.
+MIT. 동봉 폰트의 라이선스는 각 원본 배포처를 확인하세요.

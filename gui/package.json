@@ -4,12 +4,17 @@
   "description": "네이버 블로그 반자동화 에이전트 — 클릭형 GUI (내부적으로 Claude Code CLI를 호출하는 채팅 래퍼)",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "test": "node --test agent-client.test.js",
+    "smoke": "electron . --smoke"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "electron": "^32.0.0"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "allowScripts": {
     "electron@32.3.3": true

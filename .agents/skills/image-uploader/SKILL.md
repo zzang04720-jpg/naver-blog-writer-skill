@@ -12,8 +12,8 @@ description: 생성된 이미지를 GitHub 공개 레포에 push해 공개 https
 스마트에디터는 base64로 삽입한 이미지와 로컬 파일 경로를 차단한다 (C9). 붙여넣기로 이미지가 함께 들어가려면 **이미지가 공개 https URL에 이미 올라가 있어야 한다.** 이 스킬이 그 URL을 만든다.
 
 ## 처리
-1. `images/` 폴더의 모든 파일을 이미지 호스팅용 GitHub 공개 레포로 push한다 (경로 예: `<repo>/<YYYY-MM-DD>/<file>`)
-2. push된 각 파일의 공개 URL을 조합한다: `https://raw.githubusercontent.com/<user>/<repo>/main/<date>/<file>`
+1. `images/` 폴더의 모든 파일을 이미지 호스팅용 GitHub 공개 레포로 push한다 (경로 예: `<repo>/<YYYY-MM-DD>/<글폴더명>/<file>`)
+2. push된 각 파일의 공개 URL을 조합한다: `https://raw.githubusercontent.com/<user>/<repo>/<branch>/<date>/<글폴더명>/<file>`
 3. 각 URL에 HTTP GET을 보내 200 응답을 확인한다
 4. `images.json`에 다음 구조로 기록한다: `[{position, filename, public_url, alt, source, status}]`
    - `position`: 썸네일=0, 본문 이미지=소제목 순서
@@ -31,3 +31,9 @@ description: 생성된 이미지를 GitHub 공개 레포에 push해 공개 https
 - **삭제하지 않는다.** 네이버가 붙여넣은 외부 이미지를 자기 서버로 재업로드하는지, 원본 URL을 계속 참조하는지 확정되지 않았다. 후자라면 레포 삭제 시 과거 글의 이미지가 전부 깨진다
 - 파일명 규칙(`<핵심키워드>-01.jpg`)은 비용이 0이므로 유지하되, 재업로드 시 파일명이 바뀔 수 있으므로 SEO 효과에 의존하는 설계는 하지 않는다
 - 붙여넣은 이미지를 클릭했을 때 네이버 이미지 편집 도구가 뜨면 재업로드된 것으로 확인되며, 그때 삭제 금지 규칙을 완화할 수 있다 (아직 미확정 상태)
+
+## 경로 기준
+
+위 실행 명령은 저장소 루트에서 실행한다. `references/`와 `assets/`는 이 SKILL.md가 있는 폴더 기준이다. 다른 런타임에서는 `.claude/skills/` 대신 `.agents/skills/`의 동일한 스크립트를 사용할 수 있다.
+
+`GITHUB_BRANCH`는 실제 이미지 저장소의 브랜치명으로 설정한다(기본 main). 같은 날 다른 글의 이미지가 덮어써지지 않도록 글 폴더명을 경로에 포함한다.

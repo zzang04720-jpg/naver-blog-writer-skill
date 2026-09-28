@@ -1,7 +1,9 @@
 ---
 name: visual-producer
 description: 본문 이미지를 Canva로 자동 생성하고, 썸네일은 문구만 결정한 뒤 사람이 캔바에서 직접 만들 때까지 대기했다가, 완료되면 공개 URL로 호스팅까지 마치는 서브에이전트. S8~S8.5를 담당한다.
-tools: canva-visuals, image-uploader
+skills:
+  - canva-visuals
+  - image-uploader
 ---
 
 # visual-producer
@@ -15,8 +17,8 @@ S8(이미지 생성)~S8.5(이미지 호스팅) 전담.
 - `02_meta.json` 경로 (`thumbnail_copy`, `image_specs[]` 포함)
 
 ## 출력
-- `/output/<slug>/images/` (본문 이미지 N장은 자동 생성, `thumbnail.jpg`는 사람이 채워 넣음, 전부 1200px 이상)
-- `/output/<slug>/images.json` (파일명, 공개 URL, 대체텍스트, 생성 파라미터)
+- `output/<slug>/images/` (본문 이미지 N장은 자동 생성, `thumbnail.jpg`는 사람이 채워 넣음, 전부 1200px 이상)
+- `output/<slug>/images.json` (파일명, 공개 URL, 대체텍스트, 생성 파라미터)
 
 ## 처리
 
@@ -25,6 +27,8 @@ S8(이미지 생성)~S8.5(이미지 호스팅) 전담.
 **1. 본문 이미지 자동 생성 (`canva-visuals` 스킬)** — 기존과 동일, 변경 없음
 `image_specs[]`의 소제목당 1장, 텍스트 없이 해당 문단의 구체적 장면으로 생성해 `export-design`으로 1200px 이상 내보내 `images/`에 저장한다. 파일명 규칙: `<핵심키워드>-02.jpg`, `-03.jpg` ... (`-01`/썸네일 자리는 아래 절차로 사람이 채운다)
 
+Canva 연결이 없으면 소제목별 이미지 요구사항을 사용자에게 제시하고 사용자가 준비한 파일을 받는다. 개인 템플릿은 포함되어 있지 않다.
+
 성공 기준: 본문 이미지 수 = 소제목 수, 전부 1200px 이상.
 실패 시: 개별 이미지 단위로 1회 재시도 → 그래도 실패하면 해당 이미지만 스킵하고 로그에 남긴다. 이미지 1장이 빠져도 발행 자체는 가능하므로 전체 흐름을 막지 않는다.
 
@@ -32,7 +36,7 @@ S8(이미지 생성)~S8.5(이미지 호스팅) 전담.
 
 **3. 사람에게 제시하고 대기** — 다음 형태로 안내하고 응답을 기다린다:
 
-> "다음 문구로 썸네일을 만들어서 `/output/<slug>/images/thumbnail.jpg`로 저장해주세요.
+> "다음 문구로 썸네일을 만들어서 `output/<slug>/images/thumbnail.jpg`로 저장해주세요.
 > line1: ... / line2: ... / line3: ... / sub: ..."
 
 **이건 승인 게이트와 같은 성격의 대기 지점이다.** 사람의 응답(파일 생성)을 기다리며, 이미지별 재시도(1회) 같은 자동 재시도 횟수 개념이 없다. 실패해서 스킵하는 대상도 아니다 — 사람이 만들 때까지 그냥 기다린다.
@@ -45,7 +49,7 @@ S8(이미지 생성)~S8.5(이미지 호스팅) 전담.
 스마트에디터는 base64 삽입과 로컬 경로를 차단하므로 붙여넣기로 이미지가 따라오려면 공개 https URL이 이미 있어야 한다.
 
 1. `images/`를 GitHub 공개 레포에 push한다
-2. `raw.githubusercontent.com/<user>/<repo>/main/<date>/<file>` 형태의 영구 URL을 확보한다
+2. `raw.githubusercontent.com/<user>/<repo>/<branch>/<date>/<글폴더명>/<file>` 형태의 영구 URL을 확보한다
 3. `images.json`에 `{position, filename, public_url, alt, source, status}`로 기록한다
 
 성공 기준: 모든 이미지에 대응하는 https URL 존재, URL이 200 응답.

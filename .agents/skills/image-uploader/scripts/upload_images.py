@@ -30,6 +30,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import quote
 from pathlib import Path
 
 MAX_RETRY = 1
@@ -41,12 +42,12 @@ def load_env(env_path: Path) -> dict[str, str]:
     env: dict[str, str] = {}
     if not env_path.exists():
         return env
-    for line in env_path.read_text(encoding="utf-8").splitlines():
+    for line in env_path.read_text(encoding="utf-8-sig").splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
-        env[key.strip()] = value.strip()
+        env[key.strip()] = value.strip().strip('"').strip("'")
     return env
 
 
@@ -54,9 +55,9 @@ def find_project_root(start: Path) -> Path:
     """blog-profile.yaml이 있는 상위 폴더를 프로젝트 루트로 본다 (.env도 거기 있다)."""
     cur = start.resolve()
     for parent in [cur, *cur.parents]:
-        if (parent / "blog-profile.yaml").exists():
+        if (parent / "blog-profile.example.yaml").is_file() and (parent / "CLAUDE.md").is_file():
             return parent
-    return start.resolve()
+    raise RuntimeError("이 저장소 안에서 실행하세요. blog-profile.example.yaml과 CLAUDE.md가 필요합니다.")
 
 
 def github_request(method: str, url: str, token: str, payload: dict | None = None) -> dict:
@@ -69,26 +70,27 @@ def github_request(method: str, url: str, token: str, payload: dict | None = Non
         return json.loads(resp.read().decode("utf-8"))
 
 
-def upload_file(repo: str, token: str, repo_path: str, local_path: Path) -> str:
+def upload_file(repo: str, token: str, repo_path: str, local_path: Path, branch: str = GITHUB_BRANCH) -> str:
     """파일을 GitHub Contents API로 push하고 raw.githubusercontent.com URL을 반환한다."""
     content_b64 = base64.b64encode(local_path.read_bytes()).decode("ascii")
-    url = f"{GITHUB_API}/repos/{repo}/contents/{repo_path}"
+    encoded_path = quote(repo_path, safe="/")
+    url = f"{GITHUB_API}/repos/{repo}/contents/{encoded_path}"
 
     # 같은 경로에 파일이 이미 있으면(재실행 등) 업데이트에 sha가 필요하다
     sha = None
     try:
-        existing = github_request("GET", url, token)
+        existing = github_request("GET", f"{url}?ref={quote(branch, safe='')}", token)
         sha = existing.get("sha")
     except urllib.error.HTTPError as e:
         if e.code != 404:
             raise
 
-    payload = {"message": f"add {repo_path}", "content": content_b64, "branch": GITHUB_BRANCH}
+    payload = {"message": f"add {repo_path}", "content": content_b64, "branch": branch}
     if sha:
         payload["sha"] = sha
 
     github_request("PUT", url, token, payload)
-    return f"https://raw.githubusercontent.com/{repo}/{GITHUB_BRANCH}/{repo_path}"
+    return f"https://raw.githubusercontent.com/{repo}/{quote(branch, safe='')}/{encoded_path}"
 
 
 def verify_url(url: str) -> bool:
@@ -109,7 +111,10 @@ def load_or_build_entries(images_dir: Path, images_json_path: Path) -> list[dict
     if images_json_path.exists():
         return json.loads(images_json_path.read_text(encoding="utf-8"))
 
-    files = sorted(images_dir.glob("*"))
+    files = sorted(f for f in images_dir.iterdir() if f.is_file() and f.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"})
+    thumbnails = [f for f in files if f.stem.lower() == "thumbnail"]
+    body = [f for f in files if f not in thumbnails]
+    positioned = [(0, f) for f in thumbnails] + list(enumerate(body, 1))
     return [
         {
             "position": idx,
@@ -119,11 +124,13 @@ def load_or_build_entries(images_dir: Path, images_json_path: Path) -> list[dict
             "source": "unknown",
             "status": "pending",
         }
-        for idx, f in enumerate(files)
+        for idx, f in positioned
     ]
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     if len(sys.argv) != 3:
         print("사용법: python upload_images.py <output-dir> <date:YYYY-MM-DD>")
         sys.exit(1)
@@ -133,10 +140,11 @@ def main() -> None:
     images_dir = out_dir / "images"
     images_json_path = out_dir / "images.json"
 
-    project_root = find_project_root(out_dir)
+    project_root = find_project_root(Path(__file__).parent)
     env = load_env(project_root / ".env")
     token = env.get("GITHUB_TOKEN")
     repo = env.get("GITHUB_REPO")
+    branch = env.get("GITHUB_BRANCH") or GITHUB_BRANCH
 
     if not token or not repo:
         print(
@@ -160,11 +168,12 @@ def main() -> None:
             failures.append(entry["filename"])
             continue
 
-        repo_path = f"{date_str}/{entry['filename']}"
+        # 같은 날 작성한 다른 글의 thumbnail.jpg를 덮어쓰지 않는다.
+        repo_path = f"{date_str}/{out_dir.resolve().name}/{entry['filename']}"
         url = None
         for attempt in range(1 + MAX_RETRY):
             try:
-                candidate = upload_file(repo, token, repo_path, local_path)
+                candidate = upload_file(repo, token, repo_path, local_path, branch)
                 if verify_url(candidate):
                     url = candidate
                     break

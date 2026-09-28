@@ -7,4 +7,7 @@ __pycache__/
 .DS_Store
 gui/node_modules/
 gui/dist/
-gui/package-lock.json
+
+.venv/
+.claude/settings.local.json
+.claude/agent-memory-local/

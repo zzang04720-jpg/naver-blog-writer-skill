@@ -2,12 +2,8 @@
 """
 naver-serp-collector: NAVER API HUB 검색 API(블로그/뉴스) 호출
 
-2026-09-06 개정: 2026-07-31부로 기존 "네이버 개발자센터" 검색 API 신규
-발급이 막히고 NAVER API HUB(네이버클라우드플랫폼)로 이관됐다. 엔드포인트가
-openapi.naver.com/v1/search/*.json 에서 naverapihub.apigw.ntruss.com/search/v1/*
-로 바뀌었고, 인증 헤더도 X-Naver-Client-Id/Secret 에서
-X-NCP-APIGW-API-KEY-ID/X-NCP-APIGW-API-KEY 로 바뀌었다. 이 스크립트는
-신규 방식으로 작성됐고, 실제 API HUB 키로 라이브 테스트를 거쳤다.
+NAVER API HUB 검색 API의 엔드포인트와 인증 헤더를 사용한다.
+새 설치의 인증 성공 여부는 사용자 계정에서 별도로 확인한다.
 
 사용법:
     python serp.py blog "강아지 사료" --display 30
@@ -41,21 +37,21 @@ def load_env(env_path: Path) -> dict[str, str]:
     env: dict[str, str] = {}
     if not env_path.exists():
         return env
-    for line in env_path.read_text(encoding="utf-8").splitlines():
+    for line in env_path.read_text(encoding="utf-8-sig").splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
-        env[key.strip()] = value.strip()
+        env[key.strip()] = value.strip().strip('"').strip("'")
     return env
 
 
 def find_project_root(start: Path) -> Path:
     cur = start.resolve()
     for parent in [cur, *cur.parents]:
-        if (parent / "blog-profile.yaml").exists():
+        if (parent / "blog-profile.example.yaml").is_file() and (parent / "CLAUDE.md").is_file():
             return parent
-    return start.resolve()
+    raise RuntimeError("이 저장소 안에서 실행하세요. blog-profile.example.yaml과 CLAUDE.md가 필요합니다.")
 
 
 def get_credentials(project_root: Path) -> tuple[str, str]:
@@ -66,7 +62,6 @@ def get_credentials(project_root: Path) -> tuple[str, str]:
         raise RuntimeError(
             "NAVER_SEARCH_CLIENT_ID/NAVER_SEARCH_CLIENT_SECRET 없음. "
             "console.ncloud.com → NAVER API HUB 콘솔에서 발급 필요 "
-            "(2026-07-31부로 구 developers.naver.com 개발자센터 신규 발급 중단)."
         )
     return client_id, client_secret
 

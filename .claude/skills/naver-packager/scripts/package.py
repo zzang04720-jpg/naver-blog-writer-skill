@@ -2,7 +2,7 @@
 """
 naver-packager: 02_draft.md + 02_meta.json + images.json -> post.html + publish.md
 
-S9(패키징) 단계 스크립트. 설계서(naver-blog-agent-design.md v1.2) §2.2 S9,
+S9(패키징) 단계 스크립트. 설계서(docs/design.md v1.2) §2.2 S9,
 §3.6, SKILL.md의 변환 규칙을 그대로 따른다.
 
 핵심 규칙
@@ -27,11 +27,14 @@ Python 3.9 이상 필요.
 """
 from __future__ import annotations
 
+import argparse
+from html import escape
 import json
 import re
 import sys
 import webbrowser
 from pathlib import Path
+from urllib.parse import urlsplit
 
 IMG_MARKER = re.compile(r"\[\[IMG-(\d+)(?::[^\]]*)?\]\]")
 TITLE_LINE = re.compile(r"^#\s+")
@@ -50,7 +53,7 @@ def load_json(path: Path):
 
 def convert_inline(text: str) -> str:
     """굵게(**text**)만 처리한다. 그 외 마크다운 인라인 문법은 쓰지 않는다는 전제."""
-    return BOLD_INLINE.sub(r"<b>\1</b>", text)
+    return BOLD_INLINE.sub(r"<b>\1</b>", escape(text))
 
 
 def build_image_map(images: list[dict]) -> dict[int, dict]:
@@ -60,6 +63,11 @@ def build_image_map(images: list[dict]) -> dict[int, dict]:
         pos = img.get("position")
         if pos is None or pos == 0:
             continue
+        if not isinstance(pos, int) or pos < 1 or pos in result:
+            raise ValueError("본문 이미지 position은 중복 없는 양의 정수여야 합니다.")
+        url = urlsplit(img.get("public_url") or "")
+        if img.get("status", "ok") != "failed" and (url.scheme != "https" or not url.netloc):
+            raise ValueError("본문 이미지에는 공개 https URL이 필요합니다.")
         result[pos] = img
     return result
 
@@ -120,7 +128,7 @@ def convert_markdown(md_text: str, image_map: dict[int, dict]) -> tuple[str, int
             img = image_map.get(pos)
             if img and img.get("public_url") and img.get("status", "ok") != "failed":
                 alt = img.get("alt", "")
-                html_parts.append(f'<p><img src="{img["public_url"]}" alt="{alt}" /></p>')
+                html_parts.append(f'<p><img src="{escape(img["public_url"], quote=True)}" alt="{escape(alt, quote=True)}" /></p>')
                 img_count += 1
             else:
                 missing_images.append(f"IMG-{pos:02d}")
@@ -199,7 +207,7 @@ def build_publish_md(meta: dict, images: list[dict], missing_images: list[str]) 
 
     lines.append("## 카테고리 / 주제 분류")
     lines.append("- [ ] 카테고리: (블로그 카테고리 선택)")
-    lines.append("- [ ] 주제 분류: 반려동물")
+    lines.append("- [ ] 주제 분류: (내 블로그와 글에 맞게 선택)")
     lines.append("")
 
     lines.append("## 대표사진")
@@ -234,11 +242,13 @@ def build_publish_md(meta: dict, images: list[dict], missing_images: list[str]) 
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        print("사용법: python package.py <output-dir>")
-        sys.exit(1)
-
-    out_dir = Path(sys.argv[1])
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("output_dir")
+    parser.add_argument("--no-open", action="store_true", help="브라우저를 열지 않고 로컬 패키지만 생성")
+    args = parser.parse_args()
+    out_dir = Path(args.output_dir)
     draft_path = out_dir / "02_draft.md"
     meta_path = out_dir / "02_meta.json"
     images_path = out_dir / "images.json"
@@ -247,8 +257,11 @@ def main() -> None:
         print(f"[에스컬레이션] {draft_path} 가 없습니다.")
         sys.exit(1)
 
-    meta = load_json(meta_path) or {}
-    images = load_json(images_path) or []
+    if not meta_path.is_file() or not images_path.is_file():
+        print("[에스컬레이션] 02_meta.json과 images.json이 필요합니다.")
+        sys.exit(1)
+    meta = load_json(meta_path)
+    images = load_json(images_path)
 
     md_text = draft_path.read_text(encoding="utf-8")
     image_map = build_image_map(images)
@@ -258,7 +271,11 @@ def main() -> None:
         [i for i in images if i.get("position") != 0 and i.get("status", "ok") != "failed"]
     )
 
-    html = f"<!-- post.html — {out_dir.name} -->\n{body_html}\n"
+    if missing_images or img_count != expected_img_count:
+        print(f"[에스컬레이션] 이미지 마커/URL 불일치: {missing_images}, 삽입 {img_count}, 예상 {expected_img_count}")
+        sys.exit(1)
+
+    html = f'<!doctype html>\n<html lang="ko"><head><meta charset="utf-8"><title>블로그 초안</title></head><body>\n{body_html}\n</body></html>\n'
     post_html_path = out_dir / "post.html"
     post_html_path.write_text(html, encoding="utf-8")
 
@@ -276,7 +293,8 @@ def main() -> None:
     print(f"post.html, publish.md 생성 완료 → {out_dir}")
 
     # 승인 게이트 2: post.html을 기본 브라우저로 자동으로 연다
-    webbrowser.open(post_html_path.resolve().as_uri())
+    if not args.no_open:
+        webbrowser.open(post_html_path.resolve().as_uri())
 
 
 if __name__ == "__main__":

@@ -1,7 +1,10 @@
 ---
 name: post-writer
 description: 확정된 브리프(01_brief.json)를 받아 트랙(search/homefeed)에 맞는 본문 초안을 2단계(1차 초안 → 전체 재작성)로 작성하는 서브에이전트. S6을 담당한다.
-tools: homefeed-writing, search-post-writing, pet-domain-guard
+skills:
+  - homefeed-writing
+  - search-post-writing
+  - pet-domain-guard
 ---
 
 # post-writer
@@ -15,9 +18,9 @@ S6(본문 작성) 전담. 트랙에 따라 완전히 다른 작문 규칙을 적
 - `01_brief.json` 경로 (메인이 전달)
 
 ## 출력
-- `/output/<slug>/02_draft.md` (2차 재작성 결과만. 이미지 삽입 위치 포함)
-- `/output/<slug>/02_meta.json` (제목 후보 8개, 태그, 검색 설명문, 소제목별 이미지 스펙)
-- (내부용, 선택) `/output/<slug>/02_draft_v1_internal.md` — 1차 초안. 디버깅 목적으로만 임시 보관하며 최종 패키징(S9) 대상에서 제외한다
+- `output/<slug>/02_draft.md` (2차 재작성 결과만. 이미지 삽입 위치 포함)
+- `output/<slug>/02_meta.json` (제목 후보 8개, 태그, 검색 설명문, 소제목별 이미지 스펙)
+- (내부용, 선택) `output/<slug>/02_draft_v1_internal.md` — 1차 초안. 디버깅 목적으로만 임시 보관하며 최종 패키징(S9) 대상에서 제외한다
 
 ## 처리
 

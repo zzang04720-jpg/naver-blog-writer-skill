@@ -1,0 +1,5 @@
+[
+  {"keyword": "FICTIONAL_DEMO_LOW_COMPETITION", "monthly_total": 1000, "blog_total": 5000, "top10_brand_ratio": 0.2},
+  {"keyword": "FICTIONAL_DEMO_HIGH_COMPETITION", "monthly_total": 1000, "blog_total": 20000, "top10_brand_ratio": 0.2},
+  {"keyword": "FICTIONAL_DEMO_MISSING_DATA", "monthly_total": 1000}
+]

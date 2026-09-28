@@ -22,8 +22,12 @@ description: naver-keyword-api(검색량)와 naver-serp-collector(문서 수) �
 
 ## 사용법
 ```bash
-python scripts/score.py candidates.json --phase 1
+python .claude/skills/keyword-scoring/scripts/score.py candidates.json --phase 1
 ```
 
 ## 실패 처리
 필터 통과 후보 0건이면 `keyword-scout`에게 "임계값 완화 후 1회 재시도" 신호를 반환한다 (자체 재시도 로직은 없음 — `keyword-scout`가 완화된 임계값으로 이 스크립트를 다시 호출).
+
+## 경로 기준
+
+위 실행 명령은 저장소 루트에서 실행한다. `references/`와 `assets/`는 이 SKILL.md가 있는 폴더 기준이다. 다른 런타임에서는 `.claude/skills/` 대신 `.agents/skills/`의 동일한 스크립트를 사용할 수 있다.

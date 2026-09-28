@@ -1,6 +1,6 @@
 ---
 name: thumbnail-compositor
-description: Pillow(PIL)로 배경 사진 위에 텍스트 4개(line1~3, sub)를 직접 렌더링해 썸네일을 합성하는 스크립트. v1.6부터 폴백 전용이며 정상 흐름(S8)에서는 호출하지 않는다. 썸네일은 사람이 캔바에서 직접 만든다 (visual-producer AGENT.md 참조).
+description: Pillow(PIL)로 배경 사진 위에 텍스트 4개(line1~3, sub)를 직접 렌더링해 썸네일을 합성하는 스크립트. v1.6부터 폴백 전용이며 정상 흐름(S8)에서는 호출하지 않는다. 썸네일은 사람이 캔바에서 직접 만든다 (.claude/agents/visual-producer.md 참조).
 ---
 
 # thumbnail-compositor
@@ -26,7 +26,7 @@ pip install Pillow --break-system-packages
 
 ## 사용법
 ```bash
-python scripts/compose.py \
+python .claude/skills/thumbnail-compositor/scripts/compose.py \
   --background <사진경로> \
   --line1 "강아지가" --line2 "피하는이유" --line3 "따로있다" \
   --sub "손이 아니라 태도가 만드는 차이" \
@@ -43,7 +43,11 @@ python scripts/compose.py \
 6. 결과를 저장한다 (quality=95)
 
 ## 출력
-`--output`에 지정한 경로에 JPG/PNG로 저장된다. 정상 흐름에서 쓸 경우 `/output/<slug>/images/thumbnail.jpg`로 저장하면 이후 S8.5(`image-uploader`)가 그대로 처리한다.
+`--output`에 지정한 경로에 JPG/PNG로 저장된다. 정상 흐름에서 쓸 경우 `output/<slug>/images/thumbnail.jpg`로 저장하면 이후 S8.5(`image-uploader`)가 그대로 처리한다.
 
 ## 실패 처리
 1회 재시도한다. 재시도도 실패하면 스킵하고 로그에 남긴다 (재활성화 시 기준. 현재는 사람이 직접 실행하므로 실패 시 사람이 바로 재시도 여부를 판단한다).
+
+## 경로 기준
+
+위 실행 명령은 저장소 루트에서 실행한다. `references/`와 `assets/`는 이 SKILL.md가 있는 폴더 기준이다. 다른 런타임에서는 `.claude/skills/` 대신 `.agents/skills/`의 동일한 스크립트를 사용할 수 있다.

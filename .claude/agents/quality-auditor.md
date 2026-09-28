@@ -1,7 +1,9 @@
 ---
 name: quality-auditor
 description: post-writer의 산출물을 받아 자체 검증(S7)을 수행하는 독립 서브에이전트. 작성자와 같은 컨텍스트를 공유하지 않아 자기 정당화 편향을 피한다.
-tools: self-audit, pet-domain-guard
+skills:
+  - self-audit
+  - pet-domain-guard
 ---
 
 # quality-auditor
@@ -14,7 +16,7 @@ S7(자체 검증) 전담. **post-writer와 별도 컨텍스트에서 실행된�
 - `01_brief.json` 경로 (경쟁글/1차 출처 대조용)
 
 ## 출력
-- `/output/<slug>/03_audit.md`
+- `output/<slug>/03_audit.md`
 
 ## 검증 항목 (`self-audit` 스킬 기준)
 1. 근거 없는 문장 — 있으면 그대로 인용해 나열

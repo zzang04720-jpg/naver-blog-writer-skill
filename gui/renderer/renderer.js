@@ -1,3 +1,4 @@
+let busy = false;
 const log = document.getElementById("log");
 const input = document.getElementById("input");
 const sendBtn = document.getElementById("send");
@@ -14,7 +15,9 @@ function appendMessage(role, text) {
   return el;
 }
 
-function setBusy(busy) {
+function setBusy(value) {
+  busy = value;
+  resetBtn.disabled = busy;
   sendBtn.disabled = busy;
   document.querySelectorAll(".quick").forEach((b) => (b.disabled = busy));
   statusPill.textContent = busy ? "진행 중..." : "대기 중";
@@ -22,7 +25,7 @@ function setBusy(busy) {
 
 async function sendMessage(text) {
   const trimmed = text.trim();
-  if (!trimmed) return;
+  if (!trimmed || busy) return;
 
   appendMessage("user", trimmed);
   input.value = "";
@@ -57,11 +60,13 @@ document.querySelectorAll(".quick").forEach((btn) => {
 });
 
 resetBtn.addEventListener("click", async () => {
-  await window.agent.reset();
+  const result = await window.agent.reset();
+  if (!result.ok) { appendMessage("error", result.text); return; }
   log.innerHTML = "";
   appendMessage("agent", "새 대화로 초기화했습니다. \"오늘 글 시작하기\"부터 다시 눌러주세요.");
 });
 
-openOutputBtn.addEventListener("click", () => {
-  window.agent.openOutput();
+openOutputBtn.addEventListener("click", async () => {
+  const result = await window.agent.openOutput();
+  if (!result.ok) appendMessage("error", result.text);
 });

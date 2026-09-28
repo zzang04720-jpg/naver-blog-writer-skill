@@ -1,7 +1,11 @@
 ---
 name: keyword-scout
 description: 소재 발굴부터 브리프 확정까지(S1~S5)를 전담하는 서브에이전트. 검색 수요 데이터를 근거로 키워드를 선별하고, 자기 블로그 내부 중복을 걸러내고, 경쟁글·1차 출처를 분석해 콘텐츠 갭을 도출한 뒤 01_brief.json을 확정한다.
-tools: naver-keyword-api, naver-serp-collector, keyword-scoring, duplicate-check
+skills:
+  - naver-keyword-api
+  - naver-serp-collector
+  - keyword-scoring
+  - duplicate-check
 ---
 
 # keyword-scout
@@ -18,7 +22,7 @@ tools: naver-keyword-api, naver-serp-collector, keyword-scoring, duplicate-check
 
 ## 출력
 
-- `/output/<slug>/01_brief.json`
+- `output/<slug>/01_brief.json`
 
 ## 처리 순서
 
@@ -46,7 +50,7 @@ tools: naver-keyword-api, naver-serp-collector, keyword-scoring, duplicate-check
 
 성공 기준: 중복 없음 또는 다른 각도임이 근거와 함께 서술됨. 실패 시 해당 후보를 스킵하고 다음 후보로 이동 (최대 3회 후 S1 복귀).
 
-> 자기 블로그 내부 중복은 검색 노출에서 서로를 갉아먹고 유사문서 판정의 직접 원인이 된다. 34건이 이미 있으므로 이 단계는 생략하지 않는다.
+> 자기 블로그 내부 중복은 검색 노출에서 서로를 갉아먹고 유사문서 판정의 직접 원인이 된다. 본인의 실제 발행 이력을 확인한다. 새 설치의 이력은 비어 있을 수 있다.
 
 ### S4. 경쟁글 분석 및 콘텐츠 갭 도출
 

@@ -23,9 +23,13 @@ description: 네이버 검색광고 API `/keywordstool`을 호출해 월간 검�
 
 ## 사용법
 ```bash
-python scripts/keywordstool.py 강아지훈련 강아지사료 강아지산책
+python .claude/skills/naver-keyword-api/scripts/keywordstool.py 강아지훈련 강아지사료 강아지산책
 ```
 
 ## 실패 처리
 - 자격 증명 없음 → 에스컬레이션 메시지 출력, `keyword-scout`가 §2.4 대체 경로(자동완성/연관검색어 기반 정성 판단, `volume_source: "estimated"`)로 분기
 - API 호출 실패(HTTP 오류) → 에스컬레이션, 응답 본문을 그대로 출력해 원인 파악을 돕는다
+
+## 경로 기준
+
+위 실행 명령은 저장소 루트에서 실행한다. `references/`와 `assets/`는 이 SKILL.md가 있는 폴더 기준이다. 다른 런타임에서는 `.claude/skills/` 대신 `.agents/skills/`의 동일한 스크립트를 사용할 수 있다.
